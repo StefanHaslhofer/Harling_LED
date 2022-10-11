@@ -8,36 +8,43 @@
 #define COLOR_MAX 150
 #define MAX_DELAY 150
 
-#define DEBUG_MSG false
+#define MAX_VOLTAGE_LEVEL 1023
+#define C_LIMIT 255
+
+#define DEBUG_MSG true
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_RGBW + NEO_KHZ800);
 uint32_t lights[NUM_LEDS];
 
 void setup()
 {
-  Serial.begin(9600);
+  #if DEBUG_MSG
+    Serial.begin(9600);
+  #endif
+  
   strip.begin();
   strip.setBrightness(100); // set brightness to n%
+
+  turnOffPixels();
 }
 
 void loop()
 {
-  showWave(strip.Color(20, COLOR_MAX, 20));
+  showWave(strip.Color(0, 255, 0, 10));
 }
 
 void showWave(uint32_t color) {
-  int audioPressure = 1;
-  int waveIndex = 0;
+  uint32_t volume = 200;
+  uint32_t waveIndex = 0;
+  uint32_t calcDelay = 0;
   bool showColor = true;
   
   #if DEBUG_MSG
     Serial.println("START WAVE");
   #endif
-  
-  turnOffPixels();
 
   while (true) {
-    //int audioPressure = analogRead(AUDIO_PIN);
+    //int volume = analogRead(AUDIO_PIN);
     waveIndex++;
     
     // switch show-color flag every n (= WAVE_LENGTH) iterations
@@ -47,12 +54,20 @@ void showWave(uint32_t color) {
     }
 
     // shift values in lights array to the right
-    shiftLights(waveIndex, showColor, color);
+    shiftLights(showColor, color, volume);
 
     // turn on pixels
     turnOnPixels();
-    delay(MAX_DELAY/audioPressure);
+
+    calcDelay = calculateSpeed(volume);
+    Serial.println(calcDelay);
+    delay(calcDelay);
   }
+}
+
+uint32_t calculateSpeed(uint32_t volume) {
+  // normalize voltage level on a scale from 1 to 9
+  return 10 - ((volume - 0) * (10 - 1)/(MAX_VOLTAGE_LEVEL - 0));
 }
 
 /*
@@ -63,13 +78,13 @@ void showWave(uint32_t color) {
  * shift lights array to the right
  * this produces the wave effect
  */
-void shiftLights(int waveIndex, bool showColor, uint32_t color) {
+void shiftLights(bool showColor, uint32_t color, uint32_t volume) {
   for (int i = NUM_LEDS - 1; i > 0; i--) {
     lights[i] = lights[i-1];
   }
     
   if (showColor) {
-    lights[0] = calculateColor(waveIndex, color);
+    lights[0] = calculateColor(color, volume);
   } else {
     lights[0] = 0;
   }
@@ -77,16 +92,35 @@ void shiftLights(int waveIndex, bool showColor, uint32_t color) {
 
 /*
  * calculate color of current LED
+ * 
+ * the color is based on the volume
+ * low: green
+ * intermediate: blue
+ * high: red
  */
-uint32_t calculateColor(int waveIndex, uint32_t color) {
+uint32_t calculateColor(uint32_t color, uint32_t volume) {
+  uint8_t r, g, b;
   
-  // 150 / WAVE_LENGTH = reduction per iteration
-  // lights[i] equals the position in the wave
+  b = color >> 16;
+  r = color >> 8;
+  g = color;
 
-  // pos 0 in wave: no reduction
-  // pos n in wave: reduction for each step times n
-
-  return color;
+  if (volume < C_LIMIT) {
+    // green accent is strongest near the point from where on the colors get mixed (C_LIMIT)
+    // sound at higher volume produces less green and more blue
+    
+    // green is the max saturation value (255) times the proportion of the current volume to the color switch point
+    g = 255.0 * volume / C_LIMIT;
+    return strip.Color(g, 0, 0, 10);
+  } else if (volume < C_LIMIT * 2) {
+    g = min(0, 255.0 - (255.0 * (volume - C_LIMIT)/ C_LIMIT));
+    b = 255.0 * (volume - C_LIMIT) / C_LIMIT;
+    return strip.Color(g, 0, b, 10);
+  } else {
+    b = min(0, 255.0 - (255.0 * (volume - C_LIMIT * 2) / C_LIMIT));
+    r = max(255, 255.0 * (volume - C_LIMIT * 2) / C_LIMIT);
+    return strip.Color(0, r, b, 10);
+  }
 }
 
 /*
