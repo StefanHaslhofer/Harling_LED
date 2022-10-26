@@ -1,15 +1,15 @@
 #include <Adafruit_NeoPixel.h>
 
 #define LED_PIN   6  // any PWM capable pin
-#define AUDIO_PIN 0  // input pin for audio signal 
+#define AUDIO_PIN A0  // input pin for audio signal 
 
 #define NUM_LEDS 79
 #define WAVE_LENGTH 30
 #define COLOR_MAX 150
 #define MAX_DELAY 150
 
-#define MAX_VOLTAGE_LEVEL 1023
-#define C_LIMIT 255
+#define MAX_VOLTAGE_LEVEL 200
+#define C_LIMIT 75
 
 #define DEBUG_MSG true
 
@@ -23,7 +23,7 @@ void setup()
   #endif
   
   strip.begin();
-  strip.setBrightness(100); // set brightness to n%
+  strip.setBrightness(20); // set brightness to n%
 
   turnOffPixels();
 }
@@ -34,7 +34,7 @@ void loop()
 }
 
 void showWave(uint32_t color) {
-  uint32_t volume = 200;
+  uint32_t volume = 150;
   uint32_t waveIndex = 0;
   uint32_t calcDelay = 0;
   bool showColor = true;
@@ -44,7 +44,12 @@ void showWave(uint32_t color) {
   #endif
 
   while (true) {
-    //int volume = analogRead(AUDIO_PIN);
+    int volume = analogRead(AUDIO_PIN);
+    
+    #if DEBUG_MSG
+      Serial.println(volume);
+    #endif
+  
     waveIndex++;
     
     // switch show-color flag every n (= WAVE_LENGTH) iterations
@@ -59,15 +64,21 @@ void showWave(uint32_t color) {
     // turn on pixels
     turnOnPixels();
 
-    calcDelay = calculateSpeed(volume);
-    Serial.println(calcDelay);
-    delay(calcDelay);
+    if(volume > 0) {
+      calcDelay = calculateSpeed(volume);
+      delay(calcDelay);
+    } else {
+      delay(10);
+    }
+    
+    //Serial.println(calcDelay);
+    
   }
 }
 
 uint32_t calculateSpeed(uint32_t volume) {
   // normalize voltage level on a scale from 1 to 9
-  return 10 - ((volume - 0) * (10 - 1)/(MAX_VOLTAGE_LEVEL - 0));
+  return min(100, 100 - ((volume - 0) * (100 - 1)/(MAX_VOLTAGE_LEVEL - 0)));
 }
 
 /*
@@ -111,14 +122,14 @@ uint32_t calculateColor(uint32_t color, uint32_t volume) {
     
     // green is the max saturation value (255) times the proportion of the current volume to the color switch point
     g = 255.0 * volume / C_LIMIT;
-    return strip.Color(g, 0, 0, 10);
+    return strip.Color(g, 0, 0, 40);
   } else if (volume < C_LIMIT * 2) {
-    g = min(0, 255.0 - (255.0 * (volume - C_LIMIT)/ C_LIMIT));
+    g = max(0, 255.0 - (255.0 * (volume - C_LIMIT)/ C_LIMIT));
     b = 255.0 * (volume - C_LIMIT) / C_LIMIT;
-    return strip.Color(g, 0, b, 10);
+    return strip.Color(g, 0, b, 40);
   } else {
-    b = min(0, 255.0 - (255.0 * (volume - C_LIMIT * 2) / C_LIMIT));
-    r = max(255, 255.0 * (volume - C_LIMIT * 2) / C_LIMIT);
+    b = max(0, 255.0 - (255.0 * (volume - C_LIMIT * 2) / C_LIMIT));
+    r = min(255, 255.0 * (volume - C_LIMIT * 2) / C_LIMIT);
     return strip.Color(0, r, b, 10);
   }
 }
