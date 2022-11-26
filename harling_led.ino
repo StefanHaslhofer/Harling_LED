@@ -1,19 +1,29 @@
 #include <Adafruit_NeoPixel.h>
 
-#define LED_PIN   6  // any PWM capable pin
-#define AUDIO_PIN A0  // input pin for audio signal 
+// declare spectrum shield pin connections
+#define STROBE 4
+#define RESET 6
+#define DC_ONE A0
+#define DC_TWO A1 
+#define NUM_STRIPS 6
+
+// define LED pins on the shield
+int LED[] = {3, 5, 6, 9, 10, 11};
+Adafruit_NeoPixel strips[NUM_STRIPS];
+
+//Define spectrum variables
+int freqAmp;
+int freqOne[NUM_STRIPS];
+int freqTwo[NUM_STRIPS]; 
+int i;
 
 #define NUM_LEDS 79
 #define WAVE_LENGTH 30
-#define COLOR_MAX 150
+#define COLOR_MAX 255
 #define MAX_DELAY 150
-
-#define MAX_VOLTAGE_LEVEL 200
-#define C_LIMIT 75
 
 #define DEBUG_MSG true
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_RGBW + NEO_KHZ800);
 uint32_t lights[NUM_LEDS];
 
 void setup()
@@ -21,117 +31,87 @@ void setup()
   #if DEBUG_MSG
     Serial.begin(9600);
   #endif
-  
-  strip.begin();
-  strip.setBrightness(20); // set brightness to n%
 
+  initSpectrumShield();
+ 
   turnOffPixels();
+}
+
+/*
+ * configure output pins and spectrum shield input pins
+ */
+void initSpectrumShield() {
+  //Set LED pin configurations
+  for(i = 0; i < NUM_STRIPS; i++)
+  {
+    strips[i] = Adafruit_NeoPixel(NUM_LEDS, LED[i], NEO_RGBW + NEO_KHZ800);
+
+    strips[i].begin();
+    strips[i].setBrightness(20); // set brightness to n%
+  }
+
+  //Set Spectrum Shield pin configurations
+  pinMode(STROBE, OUTPUT);
+  pinMode(RESET, OUTPUT);
+  pinMode(DC_ONE, INPUT);
+  pinMode(DC_TWO, INPUT);  
+  digitalWrite(STROBE, HIGH);
+  digitalWrite(RESET, HIGH);
+  
+  //Initialize Spectrum Analyzers
+  digitalWrite(STROBE, LOW);
+  delay(1);
+  digitalWrite(RESET, HIGH);
+  delay(1);
+  digitalWrite(STROBE, HIGH);
+  delay(1);
+  digitalWrite(STROBE, LOW);
+  delay(1);
+  digitalWrite(RESET, LOW);  
 }
 
 void loop()
 {
-  showWave(strip.Color(0, 255, 0, 10));
+  readFrequencies();
+  showColor();
+  delay(50);
 }
 
-void showWave(uint32_t color) {
-  uint32_t volume = 150;
-  uint32_t waveIndex = 0;
-  uint32_t calcDelay = 0;
-  bool showColor = true;
-  
-  #if DEBUG_MSG
-    Serial.println("START WAVE");
-  #endif
-
-  while (true) {
-    int volume = analogRead(AUDIO_PIN);
-    
-    #if DEBUG_MSG
-      Serial.println(volume);
-    #endif
-  
-    waveIndex++;
-    
-    // switch show-color flag every n (= WAVE_LENGTH) iterations
-    if(waveIndex % WAVE_LENGTH == 0) {
-      showColor = !showColor;
-      waveIndex = 0; // reset wave index to 0 otherwise the integer would get too large
-    }
-
-    // shift values in lights array to the right
-    shiftLights(showColor, color, volume);
-
-    // turn on pixels
-    turnOnPixels();
-
-    if(volume > 0) {
-      calcDelay = calculateSpeed(volume);
-      delay(calcDelay);
-    } else {
-      delay(10);
-    }
-    
-    //Serial.println(calcDelay);
-    
-  }
-}
-
-uint32_t calculateSpeed(uint32_t volume) {
-  // normalize voltage level on a scale from 1 to 9
-  return min(100, 100 - ((volume - 0) * (100 - 1)/(MAX_VOLTAGE_LEVEL - 0)));
-}
 
 /*
- * initialize lights array
- * 1 = light is on
- * 0 = light is off
- * 
- * shift lights array to the right
- * this produces the wave effect
+ * pull frequencies from spectrum shield
  */
-void shiftLights(bool showColor, uint32_t color, uint32_t volume) {
-  for (int i = NUM_LEDS - 1; i > 0; i--) {
-    lights[i] = lights[i-1];
-  }
-    
-  if (showColor) {
-    lights[0] = calculateColor(color, volume);
-  } else {
-    lights[0] = 0;
+void readFrequencies(){
+  //Read frequencies for each band
+  for (freqAmp = 0; freqAmp < NUM_STRIPS; freqAmp++)
+  {
+    freqOne[freqAmp] = analogRead(DC_ONE);
+    freqTwo[freqAmp] = analogRead(DC_TWO); 
+    digitalWrite(STROBE, HIGH);
+    digitalWrite(STROBE, LOW);
   }
 }
 
 /*
- * calculate color of current LED
- * 
- * the color is based on the volume
- * low: green
- * intermediate: blue
- * high: red
+ * light LEDs based on frequencies
+ */
+void showColor(){
+   for( i= 0; i < NUM_STRIPS; i++)
+   {
+     if(Frequencies_Two[i] > Frequencies_One[i]){
+        analogWrite(LED[i], Frequencies_Two[i]/4);
+     }
+     else{
+        analogWrite(LED[i], Frequencies_One[i]/4);
+     }
+   }
+}
+
+/*
+ * calculate color of current LED strip
  */
 uint32_t calculateColor(uint32_t color, uint32_t volume) {
-  uint8_t r, g, b;
-  
-  b = color >> 16;
-  r = color >> 8;
-  g = color;
-
-  if (volume < C_LIMIT) {
-    // green accent is strongest near the point from where on the colors get mixed (C_LIMIT)
-    // sound at higher volume produces less green and more blue
-    
-    // green is the max saturation value (255) times the proportion of the current volume to the color switch point
-    g = 255.0 * volume / C_LIMIT;
-    return strip.Color(g, 0, 0, 40);
-  } else if (volume < C_LIMIT * 2) {
-    g = max(0, 255.0 - (255.0 * (volume - C_LIMIT)/ C_LIMIT));
-    b = 255.0 * (volume - C_LIMIT) / C_LIMIT;
-    return strip.Color(g, 0, b, 40);
-  } else {
-    b = max(0, 255.0 - (255.0 * (volume - C_LIMIT * 2) / C_LIMIT));
-    r = min(255, 255.0 * (volume - C_LIMIT * 2) / C_LIMIT);
-    return strip.Color(0, r, b, 10);
-  }
+ 
 }
 
 /*
@@ -139,10 +119,12 @@ uint32_t calculateColor(uint32_t color, uint32_t volume) {
  */
 void turnOffPixels()
 {
-  for (int i = 0; i < NUM_LEDS; i++) {
-      strip.setPixelColor(i, strip.Color(0, 0, 0));
+  for (int i = 0; i < NUM_STRIPS; i++) {
+    for (int j = 0; j < NUM_LEDS; j++) {
+      strips[i].setPixelColor(j, 0, 0, 0);
+    }
+    strips[i].show();
   }
-  strip.show();
 }
 
 /*
@@ -154,10 +136,10 @@ void turnOffPixels()
  */
 void turnOnPixels()
 {   
-  for (int i = 0; i < NUM_LEDS; i++) {
-    // turn on or off lights based on value in array
-    strip.setPixelColor(i, lights[i]);
+  for (int i = 0; i < NUM_STRIPS; i++) {
+    for (int j = 0; j < NUM_LEDS; j++) {
+      strips[i].setPixelColor(j, lights[i]);
+    }
+    strips[i].show();
   }
-    
-  strip.show();
 }
