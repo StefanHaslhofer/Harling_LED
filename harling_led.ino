@@ -17,7 +17,7 @@ int freqOne[NUM_STRIPS];
 int freqTwo[NUM_STRIPS]; 
 int i;
 
-#define NUM_LEDS 79
+#define NUM_LEDS 10
 #define WAVE_LENGTH 30
 #define COLOR_MAX 255
 #define MAX_DELAY 150
@@ -68,6 +68,8 @@ void initSpectrumShield() {
   digitalWrite(STROBE, LOW);
   delay(1);
   digitalWrite(RESET, LOW);  
+
+  Serial.begin(9600);
 }
 
 void loop()
@@ -82,13 +84,16 @@ void loop()
  * pull frequencies from spectrum shield
  */
 void readFrequencies(){
-  //Read frequencies for each band
+  // read frequencies for each band
   for (freqAmp = 0; freqAmp < NUM_STRIPS; freqAmp++)
   {
+    digitalWrite(STROBE, HIGH);
+    delayMicroseconds(50);
+    digitalWrite(STROBE, LOW);
+    delayMicroseconds(50);
+
     freqOne[freqAmp] = analogRead(DC_ONE);
     freqTwo[freqAmp] = analogRead(DC_TWO); 
-    digitalWrite(STROBE, HIGH);
-    digitalWrite(STROBE, LOW);
   }
 }
 
@@ -96,15 +101,13 @@ void readFrequencies(){
  * light LEDs based on frequencies
  */
 void showColor(){
-   for( i= 0; i < NUM_STRIPS; i++)
-   {
-     if(Frequencies_Two[i] > Frequencies_One[i]){
-        analogWrite(LED[i], Frequencies_Two[i]/4);
-     }
-     else{
-        analogWrite(LED[i], Frequencies_One[i]/4);
-     }
-   }
+  for(int i= 5; i<NUM_STRIPS; i++) {
+    if(freqTwo[i] > freqOne[i]){
+      turnOnPixels(5, freqTwo[i]/4);
+    } else{
+      turnOnPixels(5, freqOne[i]/4);
+    }
+  }
 }
 
 /*
@@ -134,12 +137,12 @@ void turnOffPixels()
  * edges are darker than the middle
  * this "smoothes" the wave effect
  */
-void turnOnPixels()
+void turnOnPixels(uint32_t i, uint32_t freq)
 {   
-  for (int i = 0; i < NUM_STRIPS; i++) {
-    for (int j = 0; j < NUM_LEDS; j++) {
-      strips[i].setPixelColor(j, lights[i]);
-    }
-    strips[i].show();
+  int numOfPixels = freq * NUM_LEDS / 255;
+  Serial.print(freq, DEC);
+  for (int j = 0; j < numOfPixels; j++) {
+    strips[i].setPixelColor(j, strips[i].Color(150, 150, 150));
   }
+  strips[i].show();
 }
