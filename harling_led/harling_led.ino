@@ -10,21 +10,25 @@
 #define NUM_LEDS 30
 #define WAVE_LENGTH 30
 #define ACTIVATE_THRESHOLD 50 // threshold to remove cable noise
-#define FREQ_IT 3
-#define FADEOUT_CONST 245
+#define FREQ_IT 5
+#define FADEOUT_CONST 195
 #define COLOR_MAX 255
 
 // define LED pins on the shield
 int LED[] = {3, 5, 6, 9, 10, 11};
 Adafruit_NeoPixel strips[NUM_STRIPS];
 
+// define colors for led strips
+int COLORS[] = {3, 5, 6, 9, 10, 11};
+
 //Define spectrum variables
 int freqAmp;
 int freqOne[NUM_STRIPS];
 int freqTwo[NUM_STRIPS]; 
 int i;
+
 int32_t freq;
-int8_t c; // counter
+int8_t c;
 
 #define DEBUG_MSG false
 
@@ -48,7 +52,7 @@ void initSpectrumShield() {
   //Set LED pin configurations
   for(i = 0; i < NUM_STRIPS; i++)
   {
-    strips[i] = Adafruit_NeoPixel(NUM_LEDS, LED[i], NEO_RGBW + NEO_KHZ800);
+    strips[i] = Adafruit_NeoPixel(NUM_LEDS, LED[i], NEO_GRBW + NEO_KHZ800);
 
     strips[i].begin();
     strips[i].setBrightness(40); // set brightness to n%
@@ -119,14 +123,14 @@ void showColor() {
     // set color every n-th iteration (n = FREQ_IT)
     // otherwise fade out pixels
     if (c == FREQ_IT) {
-      freq /= FREQ_IT;
-      turnOnPixels(i, calculateNumOfPixels(freq));
+      // calculate arithmetic middle of frequency values 
+      turnOnPixels(i, calculateNumOfPixels(freq/FREQ_IT));
 
       c = 0;
       freq = 0;
+    } else {
+      fadeOutPixels(i, calculateNumOfPixels(freq/c));
     }
-
-    fadeOutPixels(i, calculateNumOfPixels(freq));
   }
 }
 
@@ -134,7 +138,7 @@ void showColor() {
  * calculate the number of LEDs that should be lit based on current frequency value
  */
 uint32_t calculateNumOfPixels(int32_t freq) {
- return max(0, (freq - ACTIVATE_THRESHOLD)) * NUM_LEDS / 255;
+  return max(0, (freq - ACTIVATE_THRESHOLD)) * NUM_LEDS / 255;
 }
 
 /*
@@ -160,19 +164,20 @@ void fadeOutPixels(uint32_t i, uint32_t numOfPixels) {
     for (int j = numOfPixels; j < NUM_LEDS; j++) {
       color = strips[i].getPixelColor(j);
 
-      b = color >> 16;
-      r = color >> 8;
-      g = color;
-      strips[i].setPixelColor(j, strips[i].Color(g * FADEOUT_CONST / COLOR_MAX, r * FADEOUT_CONST / COLOR_MAX, b * FADEOUT_CONST / COLOR_MAX));
+      r = color >> 16;
+      g = color >> 8;
+      b = color;
+
+      strips[i].setPixelColor(j, strips[i].Color(r * FADEOUT_CONST / COLOR_MAX, g * FADEOUT_CONST / COLOR_MAX, b * FADEOUT_CONST / COLOR_MAX));
+      // strips[i].setPixelColor(j, strips[i].Color(0, 0, 0));
   }
 }
 
 /*
- * sets strip color based on lights array
- * the brightness is determined by the position of the LED in a wave
+ * set pixel color of strip based on color array
  * 
- * edges are darker than the middle
- * this "smoothes" the wave effect
+ * i: index of strip
+ * numOfPixels: amount of pixels that should be lit
  */
 void turnOnPixels(uint32_t i, uint32_t numOfPixels)
 {   
@@ -181,7 +186,7 @@ void turnOnPixels(uint32_t i, uint32_t numOfPixels)
   #endif
 
   for (int j = 0; j < numOfPixels; j++) {
-    strips[i].setPixelColor(j, strips[i].Color(0, 100, 0));
+    strips[i].setPixelColor(j, 150, 50, 0);
   }
 
   strips[i].show();
