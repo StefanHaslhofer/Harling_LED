@@ -7,7 +7,7 @@
 #define DC_TWO A1 
 
 #define NUM_STRIPS 6
-#define NUM_LEDS 15
+#define NUM_LEDS 30
 #define ACTIVATE_THRESHOLD 50 // threshold to remove cable noise
 #define FREQ_IT 5
 #define FADEOUT_CONST 195
@@ -126,7 +126,7 @@ void updatePixels(bool fadeIn) {
       freq[i] +=  freqOne[i]/4;
     }
 
-    if(fadeIn) {      
+    if(fadeIn) { 
       // calculate arithmetic middle of frequency values 
       turnOnPixels(i, calculateNumOfPixels(freq[i]/FREQ_IT));
     } else {
