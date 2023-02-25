@@ -41,7 +41,6 @@ void setup()
   #endif
 
   initSpectrumShield();
- 
   turnOffPixels();
 }
 
@@ -87,7 +86,6 @@ void loop()
   delay(5);
 }
 
-
 /*
  * pull frequencies from spectrum shield
  */
@@ -113,7 +111,7 @@ void readFrequencies(){
 void showColor() {
   c++;
 
-  for(int i = 5; i < NUM_STRIPS; i++) {
+  for(int i = 0; i < NUM_STRIPS; i++) {
     if(freqTwo[i] > freqOne[i]){
       freq +=  freqTwo[i]/4;
     } else{
