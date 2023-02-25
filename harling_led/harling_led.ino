@@ -10,8 +10,9 @@
 #define NUM_LEDS 30
 #define ACTIVATE_THRESHOLD 50 // threshold to remove cable noise
 #define FREQ_IT 5
-#define FADEOUT_CONST 195
+#define FADEOUT_CONST 245
 #define COLOR_MAX 255
+#define PIXEL_STEP_WIDTH 2
 
 // define LED pins on the shield
 int LED[] = {3, 5, 6, 9, 10, 11};
@@ -51,7 +52,7 @@ void initSpectrumShield() {
     strips[i] = Adafruit_NeoPixel(NUM_LEDS, LED[i], NEO_GRBW + NEO_KHZ800);
 
     strips[i].begin();
-    strips[i].setBrightness(40); // set brightness to n%
+    strips[i].setBrightness(30); // set brightness to n%
   }
 
   //Set Spectrum Shield pin configurations
@@ -92,8 +93,7 @@ void loop()
   } else {
     updatePixels(false);
   }
-
-  delay(5);
+  delay(15);
 }
 
 /*
@@ -104,9 +104,9 @@ void readFrequencies(){
   for (freqAmp = 0; freqAmp < NUM_STRIPS; freqAmp++)
   {
     digitalWrite(STROBE, HIGH);
-    delayMicroseconds(50);
+    delayMicroseconds(20);
     digitalWrite(STROBE, LOW);
-    delayMicroseconds(50);
+    delayMicroseconds(20);
 
     freqOne[freqAmp] = analogRead(DC_ONE);
     freqTwo[freqAmp] = analogRead(DC_TWO); 
@@ -169,8 +169,9 @@ void fadeOutPixels(uint32_t i, uint32_t numOfPixels) {
       g = color >> 8;
       b = color;
 
-      strips[i].setPixelColor(j, strips[i].Color(r * FADEOUT_CONST / COLOR_MAX, g * FADEOUT_CONST / COLOR_MAX, b * FADEOUT_CONST / COLOR_MAX));
-      // strips[i].setPixelColor(j, strips[i].Color(0, 0, 0));
+      // uint8_t colorMultiplier = FADEOUT_CONST / COLOR_MAX;
+      // strips[i].setPixelColor(j, strips[i].Color(r * colorMultiplier, g * colorMultiplier, b * colorMultiplier));
+      strips[i].setPixelColor(j, strips[i].Color(0, 0, 0));
   }
 }
 
@@ -189,7 +190,11 @@ void turnOnPixels(uint32_t i, uint32_t numOfPixels)
   #endif
 
   for (int j = 0; j < numOfPixels; j++) {
-    strips[i].setPixelColor(j, 150, 50, 0);
+    if(j % PIXEL_STEP_WIDTH == 0) {
+      for(int n = j; n < j + PIXEL_STEP_WIDTH; n++) {
+        strips[i].setPixelColor(n, 150, 50, 0);
+      }
+    }
   }
 
   strips[i].show();
