@@ -7,8 +7,7 @@
 #define DC_TWO A1 
 
 #define NUM_STRIPS 6
-#define NUM_LEDS 30
-#define WAVE_LENGTH 30
+#define NUM_LEDS 15
 #define ACTIVATE_THRESHOLD 50 // threshold to remove cable noise
 #define FREQ_IT 5
 #define FADEOUT_CONST 195
@@ -27,12 +26,10 @@ int freqOne[NUM_STRIPS];
 int freqTwo[NUM_STRIPS]; 
 int i;
 
-int32_t freq;
+int32_t freq[NUM_STRIPS];
 int8_t c;
 
 #define DEBUG_MSG false
-
-uint32_t lights[NUM_LEDS];
 
 void setup()
 {
@@ -81,8 +78,21 @@ void initSpectrumShield() {
 
 void loop()
 {
+  c++;
   readFrequencies();
-  showColor();
+
+  // fade in pixels every n-th iteration (n = FREQ_IT)
+  // otherwise fade out pixels
+  if (c == FREQ_IT) {
+    updatePixels(true);
+
+    c = 0;
+    // reset array
+    memset(freq, 0, sizeof(freq));
+  } else {
+    updatePixels(false);
+  }
+
   delay(5);
 }
 
@@ -108,26 +118,19 @@ void readFrequencies(){
  * 
  * sum up frequencies to smooth output
  */
-void showColor() {
-  c++;
-
+void updatePixels(bool fadeIn) {
   for(int i = 0; i < NUM_STRIPS; i++) {
     if(freqTwo[i] > freqOne[i]){
-      freq +=  freqTwo[i]/4;
+      freq[i] +=  freqTwo[i]/4;
     } else{
-      freq +=  freqOne[i]/4;
+      freq[i] +=  freqOne[i]/4;
     }
-    
-    // set color every n-th iteration (n = FREQ_IT)
-    // otherwise fade out pixels
-    if (c == FREQ_IT) {
-      // calculate arithmetic middle of frequency values 
-      turnOnPixels(i, calculateNumOfPixels(freq/FREQ_IT));
 
-      c = 0;
-      freq = 0;
+    if(fadeIn) {      
+      // calculate arithmetic middle of frequency values 
+      turnOnPixels(i, calculateNumOfPixels(freq[i]/FREQ_IT));
     } else {
-      fadeOutPixels(i, calculateNumOfPixels(freq/c));
+      fadeOutPixels(i, calculateNumOfPixels(freq[i]/c));
     }
   }
 }
@@ -180,6 +183,8 @@ void fadeOutPixels(uint32_t i, uint32_t numOfPixels) {
 void turnOnPixels(uint32_t i, uint32_t numOfPixels)
 {   
   #if DEBUG_MSG
+    Serial.print(i);
+    Serial.print(":");
     Serial.println(numOfPixels);
   #endif
 
