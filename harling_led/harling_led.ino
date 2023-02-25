@@ -12,14 +12,14 @@
 #define FREQ_IT 5
 #define FADEOUT_CONST 245
 #define COLOR_MAX 255
-#define PIXEL_STEP_WIDTH 2
+#define PIXEL_STEP_WIDTH 3
 
 // define LED pins on the shield
 int LED[] = {3, 5, 6, 9, 10, 11};
 Adafruit_NeoPixel strips[NUM_STRIPS];
 
 // define colors for led strips
-int COLORS[] = {3, 5, 6, 9, 10, 11};
+int colors[NUM_STRIPS][3] = {{255, 0, 0}, {255, 100, 0}, {80, 255, 0}, {0, 255, 100}, {0, 0, 255}, {100, 0, 255}};
 
 //Define spectrum variables
 int freqAmp;
@@ -82,16 +82,16 @@ void loop()
   c++;
   readFrequencies();
 
-  // fade in pixels every n-th iteration (n = FREQ_IT)
-  // otherwise fade out pixels
+  // update pixels every n-th iteration (n = FREQ_IT)
+  // otherwise fade out
   if (c == FREQ_IT) {
-    updatePixels(true);
+    updatePixels(true, c);
 
     c = 0;
     // reset array
     memset(freq, 0, sizeof(freq));
   } else {
-    updatePixels(false);
+    updatePixels(false, c);
   }
   delay(15);
 }
@@ -118,7 +118,7 @@ void readFrequencies(){
  * 
  * sum up frequencies to smooth output
  */
-void updatePixels(bool fadeIn) {
+void updatePixels(bool fadeIn, int8_t iter) {
   for(int i = 0; i < NUM_STRIPS; i++) {
     if(freqTwo[i] > freqOne[i]){
       freq[i] +=  freqTwo[i]/4;
@@ -130,7 +130,7 @@ void updatePixels(bool fadeIn) {
       // calculate arithmetic middle of frequency values 
       turnOnPixels(i, calculateNumOfPixels(freq[i]/FREQ_IT));
     } else {
-      fadeOutPixels(i, calculateNumOfPixels(freq[i]/c));
+      fadeOutPixels(i, calculateNumOfPixels(freq[i]/iter));
     }
   }
 }
@@ -192,7 +192,7 @@ void turnOnPixels(uint32_t i, uint32_t numOfPixels)
   for (int j = 0; j < numOfPixels; j++) {
     if(j % PIXEL_STEP_WIDTH == 0) {
       for(int n = j; n < j + PIXEL_STEP_WIDTH; n++) {
-        strips[i].setPixelColor(n, 150, 50, 0);
+        strips[i].setPixelColor(n, 100, 0, 255);
       }
     }
   }
