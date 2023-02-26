@@ -9,7 +9,7 @@
 #define NUM_STRIPS 6
 #define NUM_LEDS 30
 #define ACTIVATE_THRESHOLD 50 // threshold to remove cable noise
-#define FREQ_IT 5
+#define PIXEL_UPDATE_IT 5
 #define FADEOUT_CONST 245
 #define COLOR_MAX 255
 #define PIXEL_STEP_WIDTH 3
@@ -39,7 +39,7 @@ void setup()
   #endif
 
   initSpectrumShield();
-  turnOffPixels();
+  turnOffStrips();
 }
 
 /*
@@ -82,9 +82,9 @@ void loop()
   c++;
   readFrequencies();
 
-  // update pixels every n-th iteration (n = FREQ_IT)
+  // update pixels every n-th iteration (n = PIXEL_UPDATE_IT)
   // otherwise fade out
-  if (c == FREQ_IT) {
+  if (c == PIXEL_UPDATE_IT) {
     updatePixels(true, c);
 
     c = 0;
@@ -93,6 +93,7 @@ void loop()
   } else {
     updatePixels(false, c);
   }
+
   delay(15);
 }
 
@@ -128,7 +129,7 @@ void updatePixels(bool fadeIn, int8_t iter) {
 
     if(fadeIn) { 
       // calculate arithmetic middle of frequency values 
-      turnOnPixels(i, calculateNumOfPixels(freq[i]/FREQ_IT));
+      turnOnPixels(i, calculateNumOfPixels(freq[i]/PIXEL_UPDATE_IT));
     } else {
       fadeOutPixels(i, calculateNumOfPixels(freq[i]/iter));
     }
@@ -143,36 +144,21 @@ uint32_t calculateNumOfPixels(int32_t freq) {
 }
 
 /*
- * sets strip color to 000 (off)
+ * turn off pixels after a given index
+ * this prevents the LEDs from flickering too much
+ *
+ * i: index of strip
+ * numOfPixels: amount of pixels that should stay lit
  */
-void turnOffPixels()
-{
-  for (int i = 0; i < NUM_STRIPS; i++) {
-    for (int j = 0; j < NUM_LEDS; j++) {
-      strips[i].setPixelColor(j, 0, 0, 0);
-    }
-    strips[i].show();
-  }
-}
-
-/*
- * set each pixel a bit darker
- */
-void fadeOutPixels(uint32_t i, uint32_t numOfPixels) {
+void turnOffPixels(uint32_t i, uint32_t numOfPixels) {
     uint32_t color;
     uint8_t r, g, b;
 
+    // start the iteration with a given index (numOfPixels)
+    // otherwise the whole strip is turned on and off which results in flickering
     for (int j = numOfPixels; j < NUM_LEDS; j++) {
-      color = strips[i].getPixelColor(j);
-
-      r = color >> 16;
-      g = color >> 8;
-      b = color;
-
-      // uint8_t colorMultiplier = FADEOUT_CONST / COLOR_MAX;
-      // strips[i].setPixelColor(j, strips[i].Color(r * colorMultiplier, g * colorMultiplier, b * colorMultiplier));
       strips[i].setPixelColor(j, strips[i].Color(0, 0, 0));
-  }
+    }
 }
 
 /*
@@ -190,6 +176,7 @@ void turnOnPixels(uint32_t i, uint32_t numOfPixels)
   #endif
 
   for (int j = 0; j < numOfPixels; j++) {
+    // turn on pixels stepwise to reduce flickering
     if(j % PIXEL_STEP_WIDTH == 0) {
       for(int n = j; n < j + PIXEL_STEP_WIDTH; n++) {
         strips[i].setPixelColor(n, 100, 0, 255);
@@ -198,4 +185,17 @@ void turnOnPixels(uint32_t i, uint32_t numOfPixels)
   }
 
   strips[i].show();
+}
+
+/*
+ * sets strip color to 000 (off)
+ */
+void turnOffStrips()
+{
+  for (int i = 0; i < NUM_STRIPS; i++) {
+    for (int j = 0; j < NUM_LEDS; j++) {
+      strips[i].setPixelColor(j, 0, 0, 0);
+    }
+    strips[i].show();
+  }
 }
