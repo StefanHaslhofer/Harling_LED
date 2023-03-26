@@ -11,7 +11,7 @@ A project made to visualize music on LED strips to spice up party locations ;).
 |WS2812B LED strip 5m 30LEDs/m|3|https://www.amazon.de/gp/product/B08C2XD34L/ref=ppx_yo_dt_b_asin_title_o06_s00?ie=UTF8&psc=1|
 |3.2-46V to 1.25-35V Step-Down Voltage Regulator|1|https://www.amazon.de/-/en/dp/B07K3W78SQ?psc=1&ref=ppx_yo2ov_dt_b_product_details|
 |Power Distribution Board|2|https://www.amazon.de/gp/product/B0814B5P5M/ref=ppx_yo_dt_b_asin_title_o05_s00?ie=UTF8&psc=1|
-|300W 20A Step-Down Voltage Regulator|1|https://www.amazon.de/-/en/Converter-Voltage-Constant-Current-Adjustable/dp/B07RGWJHPZ/?_encoding=UTF8&pd_rd_w=ddxiw&content-id=amzn1.sym.b23e0298-7efc-419f-9cc3-0ae74fecd012&pf_rd_p=b23e0298-7efc-419f-9cc3-0ae74fecd012&pf_rd_r=GKJTY0JYDQFBRHCJZ86T&pd_rd_wg=KPC2l&pd_rd_r=5bed0484-3ac5-47a4-a779-7d4c179e66ae&ref_=pd_gw_ci_mcx_mr_hp_atf_m|
+|DC5V 30A Switch LED Power Supply Transformers Adapter|1|https://www.btf-lighting.com/collections/5v-power-supply/products/dc5v-transformer?variant=43251378192610|
 |220Ohm Resistor|6|https://www.amazon.de/BOJACK-Resistors-Assortment-Kit-Ohm/dp/B08FD1XVL6/ref=sr_1_2_sspa?keywords=220%C2%A0ohm+widerstand&qid=1677441894&sr=8-2-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&psc=1|
 
 ## V1.0 - 02.2023
