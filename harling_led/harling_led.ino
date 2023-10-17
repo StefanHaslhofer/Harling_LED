@@ -7,7 +7,7 @@
 #define DC_TWO A1 
 
 #define NUM_STRIPS 6
-#define NUM_LEDS 30
+#define NUM_LEDS 60
 #define ACTIVATE_THRESHOLD 50 // threshold to remove cable noise
 #define PIXEL_UPDATE_IT 5
 #define FADEOUT_CONST 245
@@ -16,10 +16,17 @@
 
 // define LED pins on the shield
 int LED[] = {3, 5, 6, 9, 10, 11};
-Adafruit_NeoPixel strips[NUM_STRIPS];
+Adafruit_NeoPixel strip(NUM_LEDS, LED[0], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip1(NUM_LEDS, LED[1], NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip2(NUM_LEDS, LED[2], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip3(NUM_LEDS, LED[3], NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip4(NUM_LEDS, LED[4], NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel strip5(NUM_LEDS, LED[5], NEO_GRB + NEO_KHZ800);
+
+Adafruit_NeoPixel strips[NUM_STRIPS] = { strip, strip1, strip2, strip3, strip4, strip5 };
 
 // define colors for led strips
-int colors[NUM_STRIPS][3] = {{255, 0, 0}, {255, 100, 0}, {80, 255, 0}, {0, 255, 100}, {0, 0, 255}, {100, 0, 255}};
+// int colors[NUM_STRIPS][3] = {{255, 0, 0}, {255, 100, 0}, {80, 255, 0}, {0, 255, 100}, {0, 0, 255}, {100, 0, 255}};
 
 //Define spectrum variables
 int freqAmp;
@@ -49,10 +56,8 @@ void initSpectrumShield() {
   //Set LED pin configurations
   for(i = 0; i < NUM_STRIPS; i++)
   {
-    strips[i] = Adafruit_NeoPixel(NUM_LEDS, LED[i], NEO_GRBW + NEO_KHZ800);
-
     strips[i].begin();
-    strips[i].setBrightness(30); // set brightness to n%
+    strips[i].setBrightness(15); // set brightness to n%
   }
 
   //Set Spectrum Shield pin configurations
@@ -131,7 +136,7 @@ void updatePixels(bool fadeIn, int8_t iter) {
       // calculate arithmetic middle of frequency values 
       turnOnPixels(i, calculateNumOfPixels(freq[i]/PIXEL_UPDATE_IT));
     } else {
-      fadeOutPixels(i, calculateNumOfPixels(freq[i]/iter));
+      turnOffPixels(i, calculateNumOfPixels(freq[i]/iter));
     }
   }
 }
@@ -157,7 +162,7 @@ void turnOffPixels(uint32_t i, uint32_t numOfPixels) {
     // start the iteration with a given index (numOfPixels)
     // otherwise the whole strip is turned on and off which results in flickering
     for (int j = numOfPixels; j < NUM_LEDS; j++) {
-      strips[i].setPixelColor(j, strips[i].Color(0, 0, 0));
+      strips[i].setPixelColor(j, 0, 0, 0);
     }
 }
 
@@ -179,7 +184,7 @@ void turnOnPixels(uint32_t i, uint32_t numOfPixels)
     // turn on pixels stepwise to reduce flickering
     if(j % PIXEL_STEP_WIDTH == 0) {
       for(int n = j; n < j + PIXEL_STEP_WIDTH; n++) {
-        strips[i].setPixelColor(n, 100, 0, 255);
+        strips[i].setPixelColor(n, 180, 0, 0);
       }
     }
   }
