@@ -19,6 +19,5 @@ Every 10ms the pitch of an audio input is read in and split into six frequency s
 The amplitude of each frequency spectrum is displayed on a distinct 2m LED strip. A higher amplitude results in more LEDs being lit.
 
 The frequency composition gives information about many aspects of the song playing, which can be used to develop some creative features.
-For example, the program recognizes a sudden surge in lower frequencies as drop.
 
 For mor information on the *SparkFun Spectrum Shield* see: https://learn.sparkfun.com/tutorials/spectrum-shield-hookup-guide
